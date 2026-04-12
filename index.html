@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Счастливой Пасхи!</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Nunito:wght@600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        * { box-sizing: border-box; }
+        
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+            font-family: 'Nunito', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        /* --- СТАРТОВЫЙ ЭКРАН --- */
+        #intro { text-align: center; cursor: pointer; z-index: 20; }
+        .gift {
+            font-size: 120px;
+            display: inline-block;
+            animation: bounce 2s infinite;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.15));
+        }
+        .hint {
+            font-size: 24px; color: #00796b; margin-top: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 12px 25px; border-radius: 30px;
+        }
+
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes shakeAndPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .pop-animation { animation: shakeAndPop 0.7s forwards !important; }
+
+        /* --- ОСНОВНОЙ ЭКРАН --- */
+        #main {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 1s ease;
+        }
+
+        h1 {
+            font-family: 'Caveat', cursive; font-size: 6rem;
+            color: #d32f2f; text-shadow: 4px 4px 0px #fff;
+            z-index: 10; margin: 0; text-align: center;
+        }
+
+        /* --- КНОПКА ПОДДЕРЖКИ --- */
+        #support-container {
+            margin-top: 40px;
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 1s ease;
+            pointer-events: none;
+        }
+        
+        .btn-support {
+            background-color: #ff5252;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+            transition: all 0.3s ease;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .btn-support:hover { transform: scale(1.05); background-color: #ff1744; }
+        .thanks-msg { color: #00796b; font-size: 22px; font-weight: bold; }
+
+        /* --- КРУГИ --- */
+        #circle-outer, #circle-inner { position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; }
+        #circle-outer { animation: spin 25s linear infinite; z-index: 1; }
+        #circle-inner { animation: counter-spin 18s linear infinite; z-index: 2; }
+
+        .item-outer, .item-inner { position: absolute; display: flex; justify-content: center; align-items: center; }
+        .item-outer { width: 60px; height: 60px; margin: -30px; font-size: 45px; animation: counter-spin 25s linear infinite; }
+        .item-inner { width: 40px; height: 40px; margin: -20px; font-size: 30px; animation: spin 18s linear infinite; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes counter-spin { 100% { transform: rotate(-360deg); } }
+
+        @media (max-width: 600px) { h1 { font-size: 3.5rem; } }
+    </style>
+</head>
+<body>
+
+    <div id="intro">
+        <div class="gift">🎁</div>
+        <div class="hint">Нажмите, чтобы открыть</div>
+    </div>
+
+    <div id="main">
+        <h1>Со Светлой Пасхой!</h1>
+        <div id="circle-outer"></div>
+        <div id="circle-inner"></div>
+        
+        <div id="support-container">
+            <button class="btn-support" onclick="supportAuthor()">Поддержать автора (Максим)</button>
+        </div>
+    </div>
+
+    <script>
+        // --- НАСТРОЙКИ УВЕДОМЛЕНИЙ ---
+        const TG_TOKEN = "8659418256:AAEfrmZvdDyGoulgpZ5yYdZ6RoxAD0NHA68"; // Вставь сюда токен от BotFather
+        const TG_CHAT_ID = "5404040279";      // Вставь сюда свой ID
+
+        const intro = document.getElementById('intro');
+        const main = document.getElementById('main');
+        const giftEl = document.querySelector('.gift');
+        const supportContainer = document.getElementById('support-container');
+
+        const emojisOuter = ['🥚', '🧁', '🐣', '🕊️', '🥚', '🥧', '🐰', '🌷'];
+        const emojisInner = ['✨', '🌸', '✨', '🌸'];
+
+        function createCircles() {
+            const minDim = Math.min(window.innerWidth, window.innerHeight);
+            const outerR = minDim * (window.innerWidth < 600 ? 0.4 : 0.35);
+            const innerR = minDim * (window.innerWidth < 600 ? 0.25 : 0.2);
+
+            fillCircle('circle-outer', emojisOuter, outerR, 'item-outer');
+            fillCircle('circle-inner', emojisInner, innerR, 'item-inner');
+        }
+
+        function fillCircle(id, list, radius, className) {
+            const container = document.getElementById(id);
+            container.innerHTML = '';
+            list.forEach((emoji, i) => {
+                const angle = (i / list.length) * (Math.PI * 2);
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                const el = document.createElement('div');
+                el.className = className;
+                el.style.left = `calc(50% + ${x}px)`;
+                el.style.top = `calc(50% + ${y}px)`;
+                el.innerText = emoji;
+                container.appendChild(el);
+            });
+        }
+
+        intro.addEventListener('click', () => {
+            giftEl.classList.add('pop-animation');
+            document.querySelector('.hint').style.opacity = '0';
+
+            setTimeout(() => {
+                intro.style.display = 'none';
+                main.style.display = 'flex';
+                createCircles();
+                setTimeout(() => { main.style.opacity = '1'; }, 50);
+                fireConfetti();
+
+                // ЧЕРЕЗ 6 СЕКУНД ПОЯВЛЯЕТСЯ КНОПКА
+                setTimeout(() => {
+                    supportContainer.style.opacity = '1';
+                    supportContainer.style.pointerEvents = 'auto';
+                }, 6000);
+
+            }, 700);
+        });
+
+        async function supportAuthor() {
+            const container = document.getElementById('support-container');
+            container.innerHTML = '<span class="thanks-msg">Спасибо за поддержку! ❤️</span>';
+            
+            // ОТПРАВКА УВЕДОМЛЕНИЯ В ТЕЛЕГРАМ
+            const message = "Максим! Кто-то нажал кнопку поддержки на твоем пасхальном сайте! 🎉";
+            const url = `https://api.telegram.org/bot${TG_TOKEN}/sendMessage?chat_id=${TG_CHAT_ID}&text=${encodeURIComponent(message)}`;
+            
+            try {
+                await fetch(url);
+            } catch (e) {
+                console.log("Ошибка отправки уведомления. Проверь настройки токена.");
+            }
+        }
+
+        function fireConfetti() {
+            const end = Date.now() + 3000;
+            (function frame() {
+                confetti({ particleCount: 5, angle: 60, spread: 55, origin: { x: 0, y: 0.8 } });
+                confetti({ particleCount: 5, angle: 120, spread: 55, origin: { x: 1, y: 0.8 } });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        window.addEventListener('resize', () => { if(main.style.display === 'flex') createCircles(); });
+    </script>
+</body>
+</html>
